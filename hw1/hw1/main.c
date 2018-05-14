@@ -38,7 +38,7 @@ int ToNewBase(int numDec, int toBaseB, char* numInA) {
 	}
 	return i;
 }
-void reverse(char* numInA, int len, char* numInB) { 
+void reverse(char* numInA, int len, char* numInB) {
 	int i = 0;
 	for (i = 0; i < len / 2; i++) {
 		numInB[i] = numInA[len - 1 - i];
@@ -50,7 +50,7 @@ void reverse(char* numInA, int len, char* numInB) {
 }
 void printArray(char* numInB, int len) {
 	int i = 0;
-	printf("The result is: ");
+	printf("The result is:");
 	for (i = 0; i < len; i++) {
 		printf("%c", numInB[i]);
 	}
@@ -62,10 +62,6 @@ int getinput(char* numInA, int baseA, char* range) {
 	int flag = 0;
 	char c;
 	printf("Please enter a number in base %d : \n", baseA);
-	if ((c = getchar()) != '\n') {
-		printf("An error occurred!\n");
-		return 0;
-	}
 	while ((c = getchar()) != EOF && c != '\n' && c != '\t' && c != ' ' && c != '\v') {
 		for (j = 0; j < 17; j++) {
 			if (c == range[j]) {
@@ -105,8 +101,12 @@ int main() {
 		printf("An error occurred!\n");
 		return 0;
 	}
+	if ((check = getchar()) != '\n') {
+		printf("An error occurred!\n");
+		return 0;
+	}
 	if (baseA < 2 || baseA > 16) {
-		printf("Invalid input base\n");
+		printf("Invalid input base:\n");
 		return 0;
 	}
 	printf("Please enter the desired base : \n");
@@ -115,10 +115,13 @@ int main() {
 		return 0;
 	}
 	if (baseB < 2 || baseB > 16) {
-		printf("Invalid desired base\n");
+		printf("Invalid input base:\n");
 		return 0;
 	}
-
+	if ((check = getchar()) != '\n') {
+		printf("An error occurred!\n");
+		return 0;
+	}
 	numL = getinput(numInA, baseA, range);
 	if (numL == 0) {
 		return 0;
