@@ -83,7 +83,7 @@ void validate(Cell** currentSudoku) {
 	}
 }
 
-void hint(int row, int col) { /*x=col and y=row!!!*/
+void hint(int row, int col) { 
 	printf("Hint: set cell to %d\n", solvedSudoku[row*width + col]->value);
 }
 
