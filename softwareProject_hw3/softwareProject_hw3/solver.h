@@ -2,8 +2,10 @@
 #ifndef SOLVER_H_
 #define SOLVER_H_
 #include<stdbool.h>
+#include "game.h"
 #define height 9
 #define width 9
+#define rangeOfNum blockHeight*blockWidth
 
 Cell** generateSudoku();
 bool isRowValid(Cell** sudoku, int num);

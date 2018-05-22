@@ -2,7 +2,7 @@
 #include<string.h>
 #include<stdlib.h>
 #include<ctype.h>
-
+#include "game.h"
 
 int initNumberOfHints() {
 	char hints[20];
@@ -10,13 +10,15 @@ int initNumberOfHints() {
 	int convertHintsToInt = -1;
 	while (flag) {
 		printf("Please enter the number of cells to fill [0-80]:\n");
-		fgets(hints, 1024, stdin);
+		if (fgets(hints, 1024, stdin) == NULL) {
+			exitGame();
+		}
 		convertHintsToInt = atoi(hints);
 		if (hints[0] == '0') {
 			return 0;
 		}
 		if (convertHintsToInt > 80 || convertHintsToInt <= 0) {
-			printf("Error: Invalid number of cells to fill (should be between 0 and 80)\n");
+			printf("Error: invalid number of cells to fill (should be between 0 and 80)\n");
 		}
 		else flag = 0;
 	}
@@ -28,10 +30,16 @@ char* getCommand() { /*should call to this func in while or to do all this func 
 	char command[1024];
 	int check;
 	int j = 1;
-	char* values = (char*)malloc(sizeof(char) * 4);
 	char* newType;
+	char* values = (char*)malloc(sizeof(char) * 4);
+	if (values == NULL) {
+		printf("Error: getCommand has failed\n");
+		exit(0);
+	}
 	memset(values, '\0', 3);
-	fgets(command, 1024, stdin);
+	if (fgets(command, 1024, stdin) == NULL) {
+		exitGame();
+	}
 	newType = strtok(command, " \t\r\n");
 	if ((check = strcmp(newType, "set")) == 0) {
 		while (newType != NULL && j<4) {
@@ -55,7 +63,7 @@ char* getCommand() { /*should call to this func in while or to do all this func 
 	else if ((check = strcmp(newType, "restart")) == 0) {
 		values[0] = '4';
 	}
-	else if ((check = strcmp(newType, "exit")) == 0) {/*func to exit - remember to free all*/
+	else if ((check = strcmp(newType, "exit")) == 0) {
 		values[0] = '5';
 	}
 	else printf("Error: invalid command\n");

@@ -1,14 +1,17 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include "game.h"
 #include "solver.h"
 #include "ParserS.h"
 
 Cell** solvedSudoku;
 Cell** currentSudoku;
 
-Cell* createCell(int value) { /*we should do check the malloc and remember to free if wrong*/
+Cell* createCell(int value) {
 	Cell* cell = (Cell*)malloc(sizeof(Cell));
+	if (cell == NULL) {
+		printf("Error: createCell has failed\n");
+		exit(0);
+	}
 	cell->value = value;
 	cell->fixed = 0;
 	cell->empty = 0;
@@ -18,6 +21,10 @@ Cell* createCell(int value) { /*we should do check the malloc and remember to fr
 
 Cell* copyCell(Cell* cell) {
 	Cell* newCell = (Cell*)malloc(sizeof(Cell));
+	if (newCell == NULL) {
+		printf("Error: copyCell has failed\n");
+		exit(0);
+	}
 	newCell->empty = cell->empty;
 	newCell->fixed = cell->fixed;
 	newCell->value = cell->value;
@@ -25,32 +32,38 @@ Cell* copyCell(Cell* cell) {
 
 }
 
-bool isRowValidGame(Cell** sudoku, int row, int num) {
+bool isRowValidGame(Cell** sudoku, int row, int col, int num) {
 	int j = 0;
 	for (j = 0; j < width; j++) {
 		if (sudoku[(row)*width + j]->value == num) {
-			return false;
+			if (j != col) {
+				return false;
+			}
 		}
 	}
 	return true;
 }
 
-bool isColValidGame(Cell** sudoku, int col, int num) {
+bool isColValidGame(Cell** sudoku, int row, int col, int num) {
 	int i;
 	for (i = 0; i < height; i++) {
 		if (sudoku[i*width + col]->value == num) {
-			return false;
+			if (i != row) {
+				return false;
+			}
 		}
 	}
 	return true;
 }
 
-bool isBlockValidGame(Cell** sudoku, int startRow, int startCol, int num) {
+bool isBlockValidGame(Cell** sudoku, int startRow, int startCol, int row, int col, int num) {
 	int i, j;
 	for (i = 0; i < blockHeight; i++) {
 		for (j = 0; j < blockWidth; j++) {
 			if (sudoku[(i + startRow)*width + j + startCol]->value == num) {
-				return false;
+				if (row != i + startRow || col != j + startCol) {
+					return false;
+				}
 			}
 		}
 	}
@@ -86,34 +99,38 @@ bool isGameOver(Cell** sudoku) {
 	return true;
 }
 
-void set(Cell** currentSudoku, int row, int col, int val) {
+void set(Cell** currentSudoku, int row, int col, int val, char* oldCommand) {
 	bool rowValid, colValid, blockValid;
-	char command;
+	char* command;
 	if (currentSudoku[row*width + col]->fixed == 1) {
 		printf("Error: cell is fixed\n");
 	}
 	else {
 		if (val == 0) {
-			currentSudoku[row*width + col]->value = 0; 
+			currentSudoku[row*width + col]->value = 0;
 			currentSudoku[row*width + col]->empty = 0;
+			printSudoku(currentSudoku);
 		}
 		else {
-			rowValid = isRowValidGame(currentSudoku, row, val);
-			colValid = isColValidGame(currentSudoku, col, val);
-			blockValid = isBlockValidGame(currentSudoku, row - row % blockWidth, col - col % blockHeight, val);
+			rowValid = isRowValidGame(currentSudoku, row, col, val);
+			colValid = isColValidGame(currentSudoku, row, col, val);
+			blockValid = isBlockValidGame(currentSudoku, row - row % blockWidth, col - col % blockHeight, row, col, val);
 			if (rowValid && colValid && blockValid) {
 				currentSudoku[row*width + col]->value = val;
 				currentSudoku[row*width + col]->empty = 1;
 				printSudoku(currentSudoku);
 				if (isGameOver(currentSudoku)) {
 					printf("Puzzle solved successfully\n");
-					command = getCommand()[0];
-					while (command != '4' || command != '5') {
-						printf("Error: invalid command\n");
-						command = getCommand()[0];
+					free(oldCommand);
+					command = getCommand();
+					while (command[0] != '4' && command[0] != '5') {
+						if (command[0] == '1' || command[0] == '2' || command[0] == '3') {
+							printf("Error: invalid command\n");
+						}
+						free(command);
+						command = getCommand();
 					}
-					if (command == '4') {
-						/*should free all the sudoku*/
+					if (command[0] == '4') {
 						free(command);
 						restart();
 					}
@@ -139,7 +156,6 @@ void exitGame() {
 }
 
 void restart() {
-	printSudoku(currentSudoku);
 	freeSudoku(currentSudoku);
 	freeSudoku(solvedSudoku);
 	puzzleGeneration(initNumberOfHints());
@@ -148,10 +164,10 @@ void restart() {
 
 void doCommand(char* command) {
 	if (command[0] == '1') {
-		set(currentSudoku, (command[2]-'0')-1, (command[1]-'0')-1, command[3]-'0');
+		set(currentSudoku, (command[2] - '0') - 1, (command[1] - '0') - 1, command[3] - '0', command);
 	}
 	else if (command[0] == '2') {
-		hint((command[2]-'0')-1, (command[1]-'0')-1);
+		hint((command[2] - '0') - 1, (command[1] - '0') - 1);
 	}
 	else if (command[0] == '3') {
 		validate(currentSudoku);
@@ -204,17 +220,18 @@ void getSudokuWithHints(Cell** sudokuWithHints) {
 
 void freeSudoku(Cell** sudoku) {
 	int i, j;
-	for (i = 0; i < height; i++) {
-		for (j = 0; j < width; j++) {
-			free(sudoku[i*width + j]);
+	if (sudoku != NULL) {
+		for (i = 0; i < height; i++) {
+			for (j = 0; j < width; j++) {
+				free(sudoku[i*width + j]);
+			}
 		}
+		free(sudoku);
 	}
-	free(sudoku);
 }
 
 void playGame() {
 	char* command;
-	printSudoku(currentSudoku);
 	while (true) {
 		command = getCommand();
 		doCommand(command);

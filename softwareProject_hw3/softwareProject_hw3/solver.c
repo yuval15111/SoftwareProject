@@ -1,15 +1,16 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
-#include<time.h>
-#include"game.h"
-#define height 9
-#define width 9
-#define rangeOfNum blockHeight*blockWidth
+#include "solver.h"
+
 int row = 0, col = 0;
 
-Cell** generateSudoku() { /*should get the hints number*/
+Cell** generateSudoku() {
 	Cell** sudoku = (Cell**)malloc(sizeof(Cell*)*height*width);
+	if (sudoku == NULL) {
+		printf("Error: generateSudoku has failed\n");
+		exit(0);
+	}
 	int i, j;
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
@@ -39,7 +40,7 @@ bool isColValid(Cell** sudoku, int num) {
 	return true;
 }
 
-bool isBlockValid(Cell** sudoku, int startRow, int startCol, int num) {/*should check the block[1] and block[0]!!!!!!!!!!!*/
+bool isBlockValid(Cell** sudoku, int startRow, int startCol, int num) {
 	int i, j;
 	for (i = 0; i < blockHeight; i++) {
 		for (j = 0; j < blockWidth; j++) {
@@ -89,7 +90,7 @@ bool detBacktrackRec(Cell** sudoku) {
 		return true;
 	}
 	for (num = 1; num <= blockHeight * blockWidth; num++) { /*checks for every posible number:*/
-		if (isValidNum(sudoku, num)) { /*if it's safe to put this num in this cell.*/
+		if (sudoku[(row)*width + col]->fixed == 0 && isValidNum(sudoku, num)) { /*if it's safe to put this num in this cell.*/
 			sudoku[row*width + col]->value = num;
 			sudoku[row*width + col]->empty = 1;
 			if (detBacktrackRec(sudoku)) { /*if theres a solution*/
@@ -100,6 +101,12 @@ bool detBacktrackRec(Cell** sudoku) {
 		}
 	}
 	stepBack();
+	while (sudoku[(row)*width + col]->fixed == 1) {
+		if (row == 0 && col == 0) {
+			return false;
+		}
+		stepBack();
+	}
 	return false; /*theres no solution at all*/
 }
 
@@ -107,6 +114,10 @@ Cell** determenisticBacktrack(Cell** currentSudoku) {
 	int i = 0, j;
 	bool flag = false;
 	Cell** copySudoku = (Cell**)malloc(height*width * sizeof(Cell));
+	if (copySudoku == NULL) {
+		printf("Error: determenisticBacktrack has failed\n");
+		exit(0);
+	}
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
 			copySudoku[i* width + j] = copyCell(currentSudoku[i* width + j]);
@@ -117,10 +128,12 @@ Cell** determenisticBacktrack(Cell** currentSudoku) {
 	}
 	flag = detBacktrackRec(copySudoku);
 	if (flag) {
-		freeSudoku(currentSudoku); /*free the previous sudoku beacuse now we will work on copy sudoku*/
 		return copySudoku;
 	}
-	else return NULL;
+	else {
+		freeSudoku(copySudoku);
+		return NULL;
+	}
 }
 
 void updateArrayForCell(Cell** boardGeneration) { /*return the length of the array for specific cell*/
@@ -193,8 +206,23 @@ bool randomBacktrack(Cell** boardGeneration) {
 	return false;
 }
 
-void puzzleGeneration(int hints) { /*should get number of hints !!!!!!!!!!!!!! and return void* !!!*/
-						  /*create 2 empty boards*/
+void getHintsBoard(int hints, Cell** solvedSudoku, Cell** sudokoWithHints) {
+	int i, row, col;
+	for (i = 0; i < hints; i++) {
+		col = rand() % (rangeOfNum);
+		row = rand() % (rangeOfNum);
+		while (sudokoWithHints[row*width + col]->fixed == 1) {
+			col = rand() % (rangeOfNum);
+			row = rand() % (rangeOfNum);
+		}
+		sudokoWithHints[row*width + col]->fixed = 1;
+		sudokoWithHints[row*width + col]->empty = 1;
+		sudokoWithHints[row*width + col]->value = solvedSudoku[row*width + col]->value;
+	}
+}
+
+void puzzleGeneration(int hints) {
+	/*create 2 empty boards*/
 	Cell** boardGeneration = generateSudoku();
 	Cell** sudokoWithHints = generateSudoku();
 	randomBacktrack(boardGeneration);
@@ -206,19 +234,6 @@ void puzzleGeneration(int hints) { /*should get number of hints !!!!!!!!!!!!!! a
 	getHintsBoard(hints); should get also the solved board and the other empty board*/
 }
 
-void getHintsBoard(int hints, Cell** solvedSudoku, Cell** sudokoWithHints) {
-	int i, row, col;
-	for (i = 0; i < hints; i++) {
-		row = rand() % rangeOfNum;
-		col = rand() % rangeOfNum;
-		while (sudokoWithHints[row*width + col]->fixed == 1) {
-			row = rand() % rangeOfNum;
-			col = rand() % rangeOfNum;
-		}
-		sudokoWithHints[row*width + col]->fixed = 1;
-		sudokoWithHints[row*width + col]->empty = 1;
-		sudokoWithHints[row*width + col]->value = solvedSudoku[row*width + col]->value;
-	}
-}
+
 
 
